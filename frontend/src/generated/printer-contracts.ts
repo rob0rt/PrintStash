@@ -261,6 +261,13 @@ export const SHARED_PRINTER_CONTRACT = {
       "description": "Generic Klipper printer using Moonraker."
     },
     {
+      "value": "snapmaker_u1",
+      "provider": "moonraker",
+      "variant": "snapmaker_u1",
+      "label": "Snapmaker U1 (beta)",
+      "description": "Snapmaker U1 four-toolhead printer via Moonraker."
+    },
+    {
       "value": "elegoo_neptune4",
       "provider": "moonraker",
       "variant": "elegoo_neptune4",
