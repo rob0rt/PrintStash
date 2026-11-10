@@ -203,6 +203,13 @@ SETUP_OPTIONS: tuple[SetupOption, ...] = (
         description="Generic Klipper printer using Moonraker.",
     ),
     SetupOption(
+        kind="snapmaker_u1",
+        provider_id=ProviderId.MOONRAKER,
+        variant="snapmaker_u1",
+        label="Snapmaker U1 (beta)",
+        description="Snapmaker U1 four-toolhead printer via Moonraker.",
+    ),
+    SetupOption(
         kind="elegoo_neptune4",
         provider_id=ProviderId.MOONRAKER,
         variant="elegoo_neptune4",
