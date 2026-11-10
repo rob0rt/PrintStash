@@ -8,8 +8,6 @@ import re
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from app.modules.storage.artifact_content import resolve
-
 _TOOL = re.compile(r"^\s*T(\d{1,2})\s*(?:;.*)?$", re.IGNORECASE)
 _HEADER = re.compile(r"^\s*;\s*(filament_type|filament_colou?r|filament_used_g)\s*=\s*(.+)$", re.IGNORECASE)
 _COLOR = re.compile(r"^#?[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$")
@@ -92,6 +90,8 @@ def logical_filaments(lines: Iterable[str]) -> list[dict[str, Any]]:
 
 def file_filaments(file_row: Any, backend: Any) -> list[dict[str, Any]]:
     """Parse the actual authorized vault G-code, including large streamed files."""
+    from app.modules.storage.artifact_content import resolve
+
     with resolve(file_row, backend=backend).materialize() as local:
         with open(local, encoding="utf-8", errors="replace") as handle:
             return logical_filaments(handle)
