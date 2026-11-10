@@ -123,6 +123,7 @@ class PrinterCreate(BaseModel):
         Literal[
             "generic",
             "elegoo_neptune4",
+            "snapmaker_u1",
             "elegoo_centauri_carbon",
             "elegoo_centauri_carbon_2",
         ]
@@ -271,11 +272,28 @@ class MoonrakerConfigRead(BaseModel):
     klipper_config: dict[str, Any] = Field(default_factory=dict)
 
 
+class SnapmakerU1Options(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    bed_level: bool = True
+    flow_calibrate: bool = False
+    time_lapse_camera: bool = False
+
+
+class SnapmakerU1Start(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mapping: list[tuple[int, int]] = Field(min_length=1, max_length=4)
+    options: SnapmakerU1Options = Field(default_factory=SnapmakerU1Options)
+    allow_material_mismatch: bool = False
+
+
 class SendToPrinter(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     file_id: int = Field(gt=0)
     start_print: bool = False
+    snapmaker_u1: Optional[SnapmakerU1Start] = None
     remote_filename: Optional[str] = Field(default=None, max_length=512)
     # Optional Spoolman spool this print consumes. ``spool_name`` is the
     # caller-supplied label (the UI already has the spool list) cached for
