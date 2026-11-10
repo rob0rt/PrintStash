@@ -43,6 +43,7 @@ from app.db.session import get_session
 from app.modules.identity import printer_rbac, rbac, ws_tickets
 from app.modules.identity.auth import get_user_by_id, verify_access_token
 from app.modules.printing import dispatch, materials, printer_edits
+from app.modules.printing.snapmaker_u1 import file_filaments, loaded_slots
 from app.modules.printing.printer_files import (
     list_printer_files,
     sync_printer_files,
@@ -850,6 +851,43 @@ def delete_printer_permission(
 # ---------------------------------------------------------------------------
 # Send-to-print + control
 # ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{printer_id}/snapmaker-u1/preflight",
+    summary="Read U1 toolhead filaments and authorized G-code tool requirements",
+)
+async def snapmaker_u1_preflight(
+    printer_id: int,
+    file_id: int,
+    request: Request,
+    current_user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> dict:
+    printer_rbac.require_printer_role(
+        session, current_user, printer_id, PrinterRole.PRINT
+    )
+    p = get_or_404(session, Printer, printer_id, "printer_not_found")
+    if p.provider != PrinterProvider.MOONRAKER or p.provider_variant != "snapmaker_u1":
+        raise HTTPException(status_code=409, detail="snapmaker_u1_required")
+    f = get_or_404(session, File, file_id, "file_not_found")
+    if f.file_type != FileType.GCODE:
+        raise HTTPException(status_code=400, detail="file_not_gcode")
+    _require_file_role(session, current_user, f, CollectionRole.EDIT)
+    try:
+        filaments = file_filaments(f, get_backend())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    provider = _provider_client(request, p)
+    try:
+        slots = loaded_slots(await provider.query_u1_filaments())
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ProviderError as exc:
+        raise HTTPException(status_code=502, detail=exc.code) from exc
+    return {"slots": slots, "filaments": filaments}
+
+
 
 
 @router.post(
