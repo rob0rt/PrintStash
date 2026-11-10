@@ -284,13 +284,29 @@ class MoonrakerProvider(DelegatingProvider):
         "subscribe_status": "subscribe",
     }
 
-    def __init__(self, base_url: str, api_key: str | None = None) -> None:
+    def __init__(self, base_url: str, api_key: str | None = None, *, variant: str | None = None) -> None:
         super().__init__(MoonrakerClient(base_url, api_key))
+        self.variant = variant
 
     @classmethod
     def build(cls, printer: Printer) -> MoonrakerProvider:
         _require(printer, "moonraker_url")
-        return cls(printer.moonraker_url, printer.api_key)
+        return cls(printer.moonraker_url, printer.api_key, variant=printer.provider_variant)
+
+    async def query_u1_filaments(self) -> dict[str, Any]:
+        if self.variant != "snapmaker_u1":
+            raise ProviderError("snapmaker_u1_required", code="snapmaker_u1_required")
+        return await self._call("query_u1_filaments")
+
+    async def start_u1_print(self, remote_filename: str, mapping: list[tuple[int, int]], options: dict[str, bool]) -> dict[str, Any]:
+        if self.variant != "snapmaker_u1":
+            raise ProviderError("snapmaker_u1_required", code="snapmaker_u1_required")
+        return await self._call("start_u1_print", remote_filename, mapping, options)
+
+    async def start(self, remote_filename: str) -> dict[str, Any]:
+        if self.variant == "snapmaker_u1":
+            raise ProviderError("snapmaker_u1_mapping_required", code="snapmaker_u1_mapping_required")
+        return await super().start(remote_filename)
 
     async def list_files(self) -> list[dict[str, Any]]:
         body = await self._call("list_files")
@@ -425,7 +441,7 @@ class _ProductProviderFactory:
 
     def build(self, config: PrinterConfig) -> PrinterClient:
         if isinstance(config, MoonrakerConfig):
-            adapter = MoonrakerProvider(config.base_url, config.api_key)
+            adapter = MoonrakerProvider(config.base_url, config.api_key, variant=config.variant)
         elif isinstance(config, BambuConfig):
             adapter = BambuLanProvider(config.host, config.serial, config.access_code)
         elif isinstance(config, PrusaLinkConfig):
@@ -475,6 +491,7 @@ _BAMBU_SERIAL_MODEL_PREFIXES: dict[str, str] = {
 
 _PROVIDER_VARIANT_MODEL_NAMES: dict[str, str] = {
     "elegoo_neptune4": "Elegoo Neptune 4 family",
+    "snapmaker_u1": "Snapmaker U1",
     "elegoo_centauri_carbon": "Elegoo Centauri Carbon",
     "elegoo_centauri_carbon_2": "Elegoo Centauri Carbon 2",
 }
