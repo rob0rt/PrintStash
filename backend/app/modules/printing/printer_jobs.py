@@ -158,6 +158,7 @@ async def transfer_artifact(
     *,
     start_print: bool,
     mark_outcome_unknown: bool = False,
+    snapmaker_u1=None,
 ) -> None:
     """Single storage-to-provider transfer seam for immediate and queued sends."""
     try:
@@ -174,7 +175,14 @@ async def transfer_artifact(
                 try:
                     await provider.upload(local, remote_filename)
                     if start_print:
-                        await provider.start(remote_filename)
+                        if snapmaker_u1 is not None:
+                            await provider.start_u1_print(
+                                remote_filename,
+                                snapmaker_u1.mapping,
+                                snapmaker_u1.options.model_dump(),
+                            )
+                        else:
+                            await provider.start(remote_filename)
                 except Exception as exc:
                     # Upload and start are non-transactional remote operations. A
                     # transport error can arrive after the printer accepted either
