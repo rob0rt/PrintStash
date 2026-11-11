@@ -18,6 +18,7 @@ import {
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 } from "@/lib/api";
 import { usePrinters, useSpoolmanStatus, useSpools } from "@/lib/queries";
 import { formatGrams } from "@/lib/format";
@@ -68,6 +69,7 @@ export interface SendToCommands {
   createFleetBatch: typeof createFleetBatch;
   enqueueFleetJob: typeof enqueueFleetJob;
   sendToPrinter: typeof sendToPrinter;
+  getSnapmakerU1Preflight: typeof getSnapmakerU1Preflight;
 }
 
 const API_COMMANDS: SendToCommands = {
@@ -75,6 +77,7 @@ const API_COMMANDS: SendToCommands = {
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 };
 
 export function SendToButtons({
@@ -451,6 +454,7 @@ export function SendToButtons({
             fileId={selectedFile}
             filename={selectedFileDetails.original_filename}
             onClose={() => { if (!sending) setU1DialogOpen(false); }}
+            loadPreflight={commands.getSnapmakerU1Preflight}
             onStart={async (settings) => {
               await send(settings.allow_material_mismatch, settings);
             }}
