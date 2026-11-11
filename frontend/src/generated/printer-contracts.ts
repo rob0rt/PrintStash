@@ -68,6 +68,36 @@ export const SHARED_PRINTER_CONTRACT = {
         }
       ]
     },
+    "snapmaker_u1": {
+      "capabilities": [
+        "start",
+        "pause",
+        "resume",
+        "cancel",
+        "live_status",
+        "upload",
+        "list_files",
+        "send_gcode",
+        "measured_consumption",
+        "delete_file",
+        "emergency_stop",
+        "server_info",
+        "server_config",
+        "printer_config",
+        "material_state"
+      ],
+      "supportLevel": "beta",
+      "supportNotes": [
+        "Snapmaker U1 multi-toolhead start requires explicit filament mapping.",
+        "Uses Moonraker for monitoring and uploads; mapped starts use the U1 JSON-RPC extension."
+      ],
+      "requiresReadyBeforeSend": false,
+      "acceptedPrintFormats": ["gcode_text"],
+      "configFields": [
+        {"name": "base_url", "kind": "url", "required": true, "choices": []},
+        {"name": "api_key", "kind": "secret", "required": false, "choices": []}
+      ]
+    },
     "bambu_lan": {
       "capabilities": [
         "start",
@@ -262,8 +292,8 @@ export const SHARED_PRINTER_CONTRACT = {
     },
     {
       "value": "snapmaker_u1",
-      "provider": "moonraker",
-      "variant": "snapmaker_u1",
+      "provider": "snapmaker_u1",
+      "variant": null,
       "label": "Snapmaker U1 (beta)",
       "description": "Snapmaker U1 four-toolhead printer via Moonraker."
     },
