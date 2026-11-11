@@ -39,13 +39,13 @@ from printstash_core.printers import (
     Capability,
     ElegooCentauriConfig,
     MoonrakerConfig,
-    SnapmakerU1Config,
     OctoPrintConfig,
     PrintArtifactFormat,
     ProviderCapabilities,
     ProviderError,
     ProviderId,
     PrusaLinkConfig,
+    SnapmakerU1Config,
 )
 
 # Obviously fake stand-ins for real credentials.
