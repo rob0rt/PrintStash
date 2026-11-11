@@ -62,13 +62,6 @@ class PrinterProviderClient(Protocol):
     """Legacy Moonraker-shaped surface retained for application consumers."""
 
     capabilities: ProviderCapabilities
-    requires_start_options: bool
-
-    async def preflight(self, file_row: Any, backend: Any) -> dict[str, Any]: ...
-
-    async def prepare_start(self, file_row: Any, backend: Any, options: Any) -> None: ...
-
-    async def start_configured(self, remote_filename: str, options: Any) -> dict[str, Any]: ...
 
     async def info(self) -> dict[str, Any]: ...
 
@@ -106,6 +99,19 @@ class PrinterProviderClient(Protocol):
         *,
         stop_event: asyncio.Event | None = None,
     ) -> None: ...
+
+
+@runtime_checkable
+class ConfiguredStartProvider(Protocol):
+    """Optional configured-start capability, separate from the stable printer API."""
+
+    requires_start_options: bool
+
+    async def preflight(self, file_row: Any, backend: Any) -> dict[str, Any]: ...
+
+    async def prepare_start(self, file_row: Any, backend: Any, options: Any) -> None: ...
+
+    async def start_configured(self, remote_filename: str, options: Any) -> dict[str, Any]: ...
 
 
 def _require(printer: Printer, *fields: str) -> None:
