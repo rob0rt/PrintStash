@@ -111,6 +111,9 @@ async def send_to_printer(
                 "material_mismatch_confirmation_required", kind=ErrorKind.CONFLICT
             )
     backend = backend_provider()
+    blob_exists = await asyncio.to_thread(backend.exists, f.path)
+    if not blob_exists:
+        raise OperationError("file_blob_missing", kind=ErrorKind.GONE)
     if payload.snapmaker_u1 is not None:
         if not isinstance(provider, ConfiguredStartProvider):
             raise OperationError("operation_not_supported_for_provider", kind=ErrorKind.CONFLICT)
@@ -123,9 +126,6 @@ async def send_to_printer(
                 if exc.code.startswith("snapmaker_u1_") or exc.code == "operation_not_supported_for_provider"
                 else ErrorKind.UPSTREAM,
             ) from exc
-    blob_exists = await asyncio.to_thread(backend.exists, f.path)
-    if not blob_exists:
-        raise OperationError("file_blob_missing", kind=ErrorKind.GONE)
     remote_name = (
         payload.remote_filename.strip()
         if payload.remote_filename
