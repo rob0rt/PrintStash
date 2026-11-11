@@ -52,10 +52,10 @@ from app.modules.printing.printer_jobs import (
     reproducibility_payload,
 )
 from app.modules.printing.printer_provider import (
+    ConfiguredStartProvider,
     capabilities_for_provider,
     detect_printer_model,
     get_provider_client,
-    ConfiguredStartProvider,
     provider_diagnostic_summary,
 )
 from app.modules.printing.unattributed import ensure_unattributed_artifact
