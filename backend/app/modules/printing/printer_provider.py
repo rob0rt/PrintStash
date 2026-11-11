@@ -16,6 +16,7 @@ from printstash_core.printers import (
     Capability,
     ElegooCentauriConfig,
     MoonrakerConfig,
+    SnapmakerU1Config,
     OctoPrintConfig,
     PrinterClient,
     PrinterConfig,
@@ -36,6 +37,7 @@ from app.modules.printing.elegoo_centauri import (
 from app.modules.printing.moonraker import MoonrakerClient, MoonrakerError
 from app.modules.printing.octoprint import OctoPrintClient, OctoPrintError
 from app.modules.printing.prusalink import PrusaLinkClient, PrusaLinkError
+from app.modules.printing.snapmaker_u1_client import SnapmakerU1Client
 
 # Provider method -> capability required before an adapter may perform I/O.
 _METHOD_CAPABILITY: dict[str, Capability] = {
@@ -284,29 +286,13 @@ class MoonrakerProvider(DelegatingProvider):
         "subscribe_status": "subscribe",
     }
 
-    def __init__(self, base_url: str, api_key: str | None = None, *, variant: str | None = None) -> None:
+    def __init__(self, base_url: str, api_key: str | None = None) -> None:
         super().__init__(MoonrakerClient(base_url, api_key))
-        self.variant = variant
 
     @classmethod
     def build(cls, printer: Printer) -> MoonrakerProvider:
         _require(printer, "moonraker_url")
-        return cls(printer.moonraker_url, printer.api_key, variant=printer.provider_variant)
-
-    async def query_u1_filaments(self) -> dict[str, Any]:
-        if self.variant != "snapmaker_u1":
-            raise ProviderError("snapmaker_u1_required", code="snapmaker_u1_required")
-        return await self._call("query_u1_filaments")
-
-    async def start_u1_print(self, remote_filename: str, mapping: list[tuple[int, int]], options: dict[str, bool]) -> dict[str, Any]:
-        if self.variant != "snapmaker_u1":
-            raise ProviderError("snapmaker_u1_required", code="snapmaker_u1_required")
-        return await self._call("start_u1_print", remote_filename, mapping, options)
-
-    async def start(self, remote_filename: str) -> dict[str, Any]:
-        if self.variant == "snapmaker_u1":
-            raise ProviderError("snapmaker_u1_mapping_required", code="snapmaker_u1_mapping_required")
-        return await super().start(remote_filename)
+        return cls(printer.moonraker_url, printer.api_key)
 
     async def list_files(self) -> list[dict[str, Any]]:
         body = await self._call("list_files")
@@ -316,6 +302,62 @@ class MoonrakerProvider(DelegatingProvider):
     async def upload(self, local_path: Path, remote_filename: str) -> dict[str, Any]:
         return await self._call(
             "upload", local_path, remote_filename, start_print=False
+        )
+
+
+@register
+class SnapmakerU1Provider(MoonrakerProvider):
+    """U1 inherits Moonraker's capabilities; only print startup differs."""
+
+    provider = PrinterProvider.SNAPMAKER_U1
+    capabilities = PROVIDER_DEFINITIONS[ProviderId.SNAPMAKER_U1].capabilities
+    requires_start_options = True
+
+    def __init__(self, base_url: str, api_key: str | None = None) -> None:
+        DelegatingProvider.__init__(self, SnapmakerU1Client(base_url, api_key))
+
+    @classmethod
+    def build(cls, printer: Printer) -> SnapmakerU1Provider:
+        _require(printer, "moonraker_url")
+        return cls(printer.moonraker_url, printer.api_key)
+
+    async def preflight(self, file_row: Any, backend: Any) -> dict[str, Any]:
+        from app.modules.printing.snapmaker_u1 import (
+            file_filaments,
+            loaded_slots,
+        )
+
+        filaments = file_filaments(file_row, backend)
+        slots = loaded_slots(await self._call("query_u1_filaments"))
+        return {"filaments": filaments, "slots": slots}
+
+    async def prepare_start(self, file_row: Any, backend: Any, options: Any) -> None:
+        from app.modules.printing.snapmaker_u1 import validate_mapping
+
+        if options is None:
+            raise ProviderError(
+                "snapmaker_u1_mapping_required", code="snapmaker_u1_mapping_required"
+            )
+        snapshot = await self.preflight(file_row, backend)
+        try:
+            validate_mapping(
+                snapshot["filaments"],
+                snapshot["slots"],
+                options.mapping,
+                allow_material_mismatch=options.allow_material_mismatch,
+            )
+        except ValueError as exc:
+            raise ProviderError(str(exc), code=str(exc)) from exc
+
+    async def start(self, remote_filename: str) -> dict[str, Any]:
+        raise ProviderError(
+            "snapmaker_u1_mapping_required", code="snapmaker_u1_mapping_required"
+        )
+
+    async def start_configured(self, remote_filename: str, options: Any) -> dict[str, Any]:
+        return await self._call(
+            "start_u1_print", remote_filename,
+            options.mapping, options.options.model_dump(),
         )
 
 
@@ -396,6 +438,11 @@ def capabilities_for_provider(provider: PrinterProvider) -> ProviderCapabilities
 def printer_config_from_model(printer: Printer) -> PrinterConfig:
     """Copy one ORM record into an immutable, persistence-neutral config."""
 
+    if printer.provider == PrinterProvider.SNAPMAKER_U1:
+        return SnapmakerU1Config(
+            base_url=printer.moonraker_url or "",
+            api_key=printer.api_key,
+        )
     if printer.provider == PrinterProvider.MOONRAKER:
         return MoonrakerConfig(
             base_url=printer.moonraker_url or "",
@@ -440,8 +487,10 @@ class _ProductProviderFactory:
         self.capabilities = cast(ProviderCapabilities, adapter_type.capabilities)
 
     def build(self, config: PrinterConfig) -> PrinterClient:
-        if isinstance(config, MoonrakerConfig):
-            adapter = MoonrakerProvider(config.base_url, config.api_key, variant=config.variant)
+        if isinstance(config, SnapmakerU1Config):
+            adapter = SnapmakerU1Provider(config.base_url, config.api_key)
+        elif isinstance(config, MoonrakerConfig):
+            adapter = MoonrakerProvider(config.base_url, config.api_key)
         elif isinstance(config, BambuConfig):
             adapter = BambuLanProvider(config.host, config.serial, config.access_code)
         elif isinstance(config, PrusaLinkConfig):
@@ -491,7 +540,6 @@ _BAMBU_SERIAL_MODEL_PREFIXES: dict[str, str] = {
 
 _PROVIDER_VARIANT_MODEL_NAMES: dict[str, str] = {
     "elegoo_neptune4": "Elegoo Neptune 4 family",
-    "snapmaker_u1": "Snapmaker U1",
     "elegoo_centauri_carbon": "Elegoo Centauri Carbon",
     "elegoo_centauri_carbon_2": "Elegoo Centauri Carbon 2",
 }
