@@ -23,13 +23,13 @@ export type PrinterStatus = "unknown" | "offline" | "ready" | "printing" | "paus
 
 export type PrinterProvider =
   | "moonraker"
+  | "snapmaker_u1"
   | "bambu_lan"
   | "prusalink"
   | "elegoo_centauri"
   | "octoprint";
 export type PrinterVariant =
   | "generic"
-  | "snapmaker_u1"
   | "elegoo_neptune4"
   | "elegoo_centauri_carbon"
   | "elegoo_centauri_carbon_2";
