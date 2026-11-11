@@ -213,7 +213,7 @@ export function SendToButtons({
     const session = getSessionVersion();
     if (!selectedFile) return;
     const u1Printers = selectedPrinters.filter(
-      (printer) => printer.provider === "moonraker" && printer.provider_variant === "snapmaker_u1",
+      (printer) => printer.provider === "snapmaker_u1",
     );
     if (deliveryMode === "send" && startPrint && u1Printers.length > 0 && !u1Options) {
       if (selectedPrinters.length !== 1) {
