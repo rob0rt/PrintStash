@@ -43,7 +43,6 @@ from app.db.session import get_session
 from app.modules.identity import printer_rbac, rbac, ws_tickets
 from app.modules.identity.auth import get_user_by_id, verify_access_token
 from app.modules.printing import dispatch, materials, printer_edits
-from app.modules.printing.snapmaker_u1 import file_filaments, loaded_slots
 from app.modules.printing.printer_files import (
     list_printer_files,
     sync_printer_files,
@@ -130,7 +129,7 @@ def _provider_action_code(exc: ProviderError) -> str:
 
 
 def _validate_provider_config(p: Printer) -> None:
-    if p.provider == PrinterProvider.MOONRAKER and not p.moonraker_url:
+    if p.provider in {PrinterProvider.MOONRAKER, PrinterProvider.SNAPMAKER_U1} and not p.moonraker_url:
         raise HTTPException(status_code=400, detail="moonraker_url_required")
     if p.provider == PrinterProvider.BAMBU_LAN:
         if not p.bambu_host:
@@ -508,7 +507,7 @@ async def printer_config(
         session, current_user, printer_id, PrinterRole.ADMIN
     )
     p = get_or_404(session, Printer, printer_id, "printer_not_found")
-    if p.provider != PrinterProvider.MOONRAKER:
+    if p.provider not in {PrinterProvider.MOONRAKER, PrinterProvider.SNAPMAKER_U1}:
         raise HTTPException(
             status_code=409,
             detail="operation_not_supported_for_provider",
@@ -868,24 +867,20 @@ async def snapmaker_u1_preflight(
         session, current_user, printer_id, PrinterRole.PRINT
     )
     p = get_or_404(session, Printer, printer_id, "printer_not_found")
-    if p.provider != PrinterProvider.MOONRAKER or p.provider_variant != "snapmaker_u1":
-        raise HTTPException(status_code=409, detail="snapmaker_u1_required")
     f = get_or_404(session, File, file_id, "file_not_found")
     if f.file_type != FileType.GCODE:
         raise HTTPException(status_code=400, detail="file_not_gcode")
     _require_file_role(session, current_user, f, CollectionRole.EDIT)
-    try:
-        filaments = file_filaments(f, get_backend())
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
     provider = _provider_client(request, p)
     try:
-        slots = loaded_slots(await provider.query_u1_filaments())
+        return await provider.preflight(f, get_backend())
     except ValueError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ProviderError as exc:
-        raise HTTPException(status_code=502, detail=exc.code) from exc
-    return {"slots": slots, "filaments": filaments}
+        status_code = (
+            409 if exc.code == "operation_not_supported_for_provider" else 502
+        )
+        raise HTTPException(status_code=status_code, detail=exc.code) from exc
 
 
 
