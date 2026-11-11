@@ -92,10 +92,22 @@ export const SHARED_PRINTER_CONTRACT = {
         "Uses Moonraker for monitoring and uploads; mapped starts use the U1 JSON-RPC extension."
       ],
       "requiresReadyBeforeSend": false,
-      "acceptedPrintFormats": ["gcode_text"],
+      "acceptedPrintFormats": [
+        "gcode_text"
+      ],
       "configFields": [
-        {"name": "base_url", "kind": "url", "required": true, "choices": []},
-        {"name": "api_key", "kind": "secret", "required": false, "choices": []}
+        {
+          "name": "base_url",
+          "kind": "url",
+          "required": true,
+          "choices": []
+        },
+        {
+          "name": "api_key",
+          "kind": "secret",
+          "required": false,
+          "choices": []
+        }
       ]
     },
     "bambu_lan": {
