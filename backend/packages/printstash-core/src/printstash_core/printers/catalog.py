@@ -94,6 +94,22 @@ PROVIDER_DEFINITIONS: Mapping[ProviderId, ProviderDefinition] = MappingProxyType
                 ConfigField("variant", ConfigValueKind.TEXT, required=False),
             ),
         ),
+        ProviderId.SNAPMAKER_U1: ProviderDefinition(
+            provider_id=ProviderId.SNAPMAKER_U1,
+            capabilities=_capabilities(
+                *Capability,
+                support_level="beta",
+                support_notes=(
+                    "Snapmaker U1 multi-toolhead start requires explicit filament mapping.",
+                    "Uses Moonraker for monitoring and uploads; mapped starts use the U1 JSON-RPC extension.",
+                ),
+                accepted_print_formats=(PrintArtifactFormat.GCODE_TEXT,),
+            ),
+            config_fields=(
+                ConfigField("base_url", ConfigValueKind.URL),
+                ConfigField("api_key", ConfigValueKind.SECRET, required=False),
+            ),
+        ),
         ProviderId.BAMBU_LAN: ProviderDefinition(
             provider_id=ProviderId.BAMBU_LAN,
             capabilities=_capabilities(
@@ -204,8 +220,7 @@ SETUP_OPTIONS: tuple[SetupOption, ...] = (
     ),
     SetupOption(
         kind="snapmaker_u1",
-        provider_id=ProviderId.MOONRAKER,
-        variant="snapmaker_u1",
+        provider_id=ProviderId.SNAPMAKER_U1,
         label="Snapmaker U1 (beta)",
         description="Snapmaker U1 four-toolhead printer via Moonraker.",
     ),
