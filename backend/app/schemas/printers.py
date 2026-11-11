@@ -123,7 +123,6 @@ class PrinterCreate(BaseModel):
         Literal[
             "generic",
             "elegoo_neptune4",
-            "snapmaker_u1",
             "elegoo_centauri_carbon",
             "elegoo_centauri_carbon_2",
         ]
@@ -149,7 +148,7 @@ class PrinterCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_provider_fields(self) -> "PrinterCreate":
-        if self.provider == PrinterProvider.MOONRAKER and not self.moonraker_url:
+        if self.provider in {PrinterProvider.MOONRAKER, PrinterProvider.SNAPMAKER_U1} and not self.moonraker_url:
             raise ValueError("moonraker_url_required")
         if self.provider == PrinterProvider.BAMBU_LAN:
             if not self.bambu_host:
