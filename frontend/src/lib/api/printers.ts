@@ -25,6 +25,7 @@ import {
   PrinterMaterialStateRead,
   ManualMaterialStateUpdate,
   SendToPrinter,
+  SnapmakerU1Preflight,
   StartPrinterFile,
 } from "@/types";
 
@@ -125,6 +126,10 @@ export function deletePrinterPermission(printerId: number, userId: number): Prom
   return requestApi<void>(`/api/v1/printers/${printerId}/permissions/${userId}`, {
     method: "DELETE",
   });
+}
+
+export function getSnapmakerU1Preflight(printerId: number, fileId: number): Promise<SnapmakerU1Preflight> {
+  return getJson<SnapmakerU1Preflight>(`/api/v1/printers/${printerId}/snapmaker-u1/preflight?file_id=${fileId}`);
 }
 
 export function sendToPrinter(id: number, payload: SendToPrinter): Promise<PrintJobRead> {

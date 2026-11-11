@@ -40,6 +40,7 @@ from app.modules.printing.printer_jobs import (
     transfer_artifact,
 )
 from app.modules.printing.printer_provider import (
+    ConfiguredStartProvider,
     PrinterProviderClient,
     ProviderError,
 )
@@ -68,6 +69,10 @@ async def send_to_printer(
         raise OperationError(
             "operation_not_supported_for_provider", kind=ErrorKind.CONFLICT
         )
+    if payload.snapmaker_u1 is not None and not payload.start_print:
+        raise OperationError("snapmaker_u1_options_not_applicable", kind=ErrorKind.INVALID)
+    if payload.start_print and isinstance(provider, ConfiguredStartProvider) and provider.requires_start_options and payload.snapmaker_u1 is None:
+        raise OperationError("snapmaker_u1_mapping_required", kind=ErrorKind.INVALID)
     # Resolve and authorize the artifact before any provider I/O. Besides avoiding
     # unnecessary traffic, this guarantees unsupported/corrupt requests cannot
     # disclose a printer's live state or wake a device on the local network.
@@ -109,6 +114,18 @@ async def send_to_printer(
     blob_exists = await asyncio.to_thread(backend.exists, f.path)
     if not blob_exists:
         raise OperationError("file_blob_missing", kind=ErrorKind.GONE)
+    if payload.snapmaker_u1 is not None:
+        if not isinstance(provider, ConfiguredStartProvider):
+            raise OperationError("operation_not_supported_for_provider", kind=ErrorKind.CONFLICT)
+        try:
+            await provider.prepare_start(f, backend, payload.snapmaker_u1)
+        except ProviderError as exc:
+            raise OperationError(
+                exc.code,
+                kind=ErrorKind.CONFLICT
+                if exc.code.startswith("snapmaker_u1_") or exc.code == "operation_not_supported_for_provider"
+                else ErrorKind.UPSTREAM,
+            ) from exc
     remote_name = (
         payload.remote_filename.strip()
         if payload.remote_filename
@@ -147,7 +164,8 @@ async def send_to_printer(
 
     try:
         await transfer_artifact(
-            backend, provider, f, remote_name, start_print=payload.start_print
+            backend, provider, f, remote_name, start_print=payload.start_print,
+            start_options=payload.snapmaker_u1,
         )
     except ProviderError as exc:
         job.state = PrintJobState.FAILED

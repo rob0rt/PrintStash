@@ -18,6 +18,7 @@ import {
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 } from "@/lib/api";
 import { usePrinters, useSpoolmanStatus, useSpools } from "@/lib/queries";
 import { formatGrams } from "@/lib/format";
@@ -38,6 +39,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Modal } from "@/components/ui/modal";
 import { Localized } from "@/components/ui/localized";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { SnapmakerU1PrintDialog } from "./snapmaker-u1-print-dialog";
+import type { SnapmakerU1Start } from "@/types/printers";
 
 const selectClassName =
   "h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-disabled disabled:opacity-50";
@@ -66,6 +69,7 @@ export interface SendToCommands {
   createFleetBatch: typeof createFleetBatch;
   enqueueFleetJob: typeof enqueueFleetJob;
   sendToPrinter: typeof sendToPrinter;
+  getSnapmakerU1Preflight: typeof getSnapmakerU1Preflight;
 }
 
 const API_COMMANDS: SendToCommands = {
@@ -73,6 +77,7 @@ const API_COMMANDS: SendToCommands = {
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 };
 
 export function SendToButtons({
@@ -125,6 +130,8 @@ export function SendToButtons({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSend, preselectFileId, gcodeFiles]);
   const [startPrint, setStartPrint] = useState(false);
+  const [u1DialogOpen, setU1DialogOpen] = useState(false);
+  const [pendingU1, setPendingU1] = useState<SnapmakerU1Start | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"send" | "queue">("send");
   const [routingStrategy, setRoutingStrategy] = useState<RoutingStrategy>("least_busy");
   const [quantity, setQuantity] = useState(1);
@@ -205,9 +212,24 @@ export function SendToButtons({
     );
   }
 
-  async function send(allowMismatch = false) {
+  async function send(allowMismatch = false, u1Options?: SnapmakerU1Start) {
     const session = getSessionVersion();
     if (!selectedFile) return;
+    const u1Printers = selectedPrinters.filter(
+      (printer) => printer.provider === "snapmaker_u1",
+    );
+    if (deliveryMode === "send" && startPrint && u1Printers.length > 0 && !u1Options) {
+      if (selectedPrinters.length !== 1) {
+        setError("Start Snapmaker U1 prints one printer at a time to configure its toolhead mapping.");
+        return;
+      }
+      setU1DialogOpen(true);
+      return;
+    }
+    if (u1Options && (selectedPrinters.length !== 1 || u1Printers.length !== 1)) {
+      setError("Invalid Snapmaker U1 printer selection.");
+      return;
+    }
     const targetPrinterIds =
       deliveryMode === "send" || routingStrategy === "manual"
         ? selectedPrinters.map((printer) => printer.id)
@@ -307,6 +329,7 @@ export function SendToButtons({
           const job = await commands.sendToPrinter(printer.id, {
             file_id: selectedFile,
             start_print: startPrint,
+            snapmaker_u1: u1Options,
             spool_id: selectedSpoolId === "" ? null : selectedSpoolId,
             spool_name: spool
               ? spool.filament_name ||
@@ -371,6 +394,7 @@ export function SendToButtons({
           status: "completed",
           progress: 100,
         });
+        setU1DialogOpen(false);
         setShowSend(false);
         toast.success(
           startPrint
@@ -423,12 +447,26 @@ export function SendToButtons({
   return (
     <Localized>
       <>
+        {u1DialogOpen && selectedPrinters.length === 1 && selectedFileDetails && (
+          <SnapmakerU1PrintDialog
+            key={`${selectedPrinters[0].id}:${selectedFile}`}
+            printerId={selectedPrinters[0].id}
+            fileId={selectedFile}
+            filename={selectedFileDetails.original_filename}
+            onClose={() => { if (!sending) setU1DialogOpen(false); }}
+            loadPreflight={commands.getSnapmakerU1Preflight}
+            onStart={async (settings) => {
+              await send(settings.allow_material_mismatch, settings);
+            }}
+          />
+        )}
         <ConfirmModal
           open={confirmMismatch}
           onClose={() => setConfirmMismatch(false)}
           onConfirm={() => {
             setConfirmMismatch(false);
-            void send(true);
+            void send(true, pendingU1 ?? undefined);
+            setPendingU1(null);
           }}
           title={uiText("Print with a known material mismatch?")}
           description={uiText(

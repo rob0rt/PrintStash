@@ -833,7 +833,7 @@ function AddPrinterModal({ onClose, onCreated }: { onClose: () => void; onCreate
         ...setupProviderFields(setupKind),
         notes: notes || undefined,
       };
-      if (setupKind === "moonraker" || setupKind === "elegoo_neptune4") {
+      if (setupKind === "moonraker" || setupKind === "elegoo_neptune4" || setupKind === "snapmaker_u1") {
         payload.moonraker_url = url.trim();
         payload.api_key = moonrakerKey || undefined;
       } else if (setupKind === "bambu_lan") {

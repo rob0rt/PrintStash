@@ -30,6 +30,7 @@ from .models import (
     ProviderError,
     ProviderId,
     PrusaLinkConfig,
+    SnapmakerU1Config,
     TemperatureSnapshot,
     ToolSnapshot,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "ConfigValueKind",
     "ElegooCentauriConfig",
     "MoonrakerConfig",
+    "SnapmakerU1Config",
     "MaterialSlotSnapshot",
     "OctoPrintConfig",
     "PrintArtifactFormat",

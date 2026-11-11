@@ -41,11 +41,13 @@ const checkFleetCompatibility = vi.fn<SendToCommands["checkFleetCompatibility"]>
 const createFleetBatch = vi.fn<SendToCommands["createFleetBatch"]>();
 const enqueueFleetJob = vi.fn<SendToCommands["enqueueFleetJob"]>();
 const sendToPrinter = vi.fn<SendToCommands["sendToPrinter"]>();
+const getSnapmakerU1Preflight = vi.fn<SendToCommands["getSnapmakerU1Preflight"]>();
 const commands: SendToCommands = {
   checkFleetCompatibility,
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 };
 
 const printer = aPrinter({
@@ -231,6 +233,16 @@ function renderPanel({
 beforeEach(() => {
   // `useRequireAuth` gates the send buttons on a stored session.
   storeLogin("", adminUser, { silent: true });
+  getSnapmakerU1Preflight.mockReset();
+  getSnapmakerU1Preflight.mockResolvedValue({
+    filaments: [{ index: 0, material: "PETG", color: "#FF0000", grams: 4 }],
+    slots: [
+      { index: 0, present: true, material: "PLA", subtype: null, vendor: "Test", color: "#00FF00" },
+      { index: 1, present: true, material: "PETG", subtype: "Matte", vendor: "SUNLU", color: "#FF0000" },
+      { index: 2, present: false, material: null, subtype: null, vendor: null, color: null },
+      { index: 3, present: false, material: null, subtype: null, vendor: null, color: null },
+    ],
+  });
   enqueueFleetJob.mockReset();
   enqueueFleetJob.mockResolvedValue(queuedJob);
   createFleetBatch.mockReset();
@@ -440,6 +452,45 @@ describe("SendToQueue", () => {
       ),
     );
   });
+  it("starts Snapmaker U1 through the mapped toolhead preflight", async () => {
+    sendToPrinter.mockResolvedValue(queuedJob);
+    renderPanel({
+      printers: [aPrinter({
+        id: 7, name: "Snapmaker U1", provider: "snapmaker_u1",
+        moonraker_url: "http://u1.local:7125",
+      })],
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Send to printer" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Start print immediately" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send & start print" }));
+
+    await waitFor(() => {
+      expect(getSnapmakerU1Preflight).toHaveBeenCalledWith(7, 42);
+    });
+    expect(screen.getByLabelText("Physical toolhead")).toHaveValue("1");
+    await userEvent.click(screen.getAllByRole("button", { name: "Send & start print" }).at(-1)!);
+
+    await waitFor(() => {
+      expect(sendToPrinter).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({
+          file_id: 42,
+          start_print: true,
+          snapmaker_u1: {
+            mapping: [[0, 1]],
+            options: {
+              bed_level: true,
+              flow_calibrate: false,
+              time_lapse_camera: false,
+            },
+            allow_material_mismatch: false,
+          },
+        }),
+      );
+    });
+  });
+
   it("uploads to every printer the user picked", async () => {
     // "Send now" is per-printer, unlike the queue: the fleet does not choose,
     // so each selected machine gets its own upload.

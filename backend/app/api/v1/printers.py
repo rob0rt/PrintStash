@@ -52,6 +52,7 @@ from app.modules.printing.printer_jobs import (
     reproducibility_payload,
 )
 from app.modules.printing.printer_provider import (
+    ConfiguredStartProvider,
     capabilities_for_provider,
     detect_printer_model,
     get_provider_client,
@@ -129,7 +130,7 @@ def _provider_action_code(exc: ProviderError) -> str:
 
 
 def _validate_provider_config(p: Printer) -> None:
-    if p.provider == PrinterProvider.MOONRAKER and not p.moonraker_url:
+    if p.provider in {PrinterProvider.MOONRAKER, PrinterProvider.SNAPMAKER_U1} and not p.moonraker_url:
         raise HTTPException(status_code=400, detail="moonraker_url_required")
     if p.provider == PrinterProvider.BAMBU_LAN:
         if not p.bambu_host:
@@ -507,7 +508,7 @@ async def printer_config(
         session, current_user, printer_id, PrinterRole.ADMIN
     )
     p = get_or_404(session, Printer, printer_id, "printer_not_found")
-    if p.provider != PrinterProvider.MOONRAKER:
+    if p.provider not in {PrinterProvider.MOONRAKER, PrinterProvider.SNAPMAKER_U1}:
         raise HTTPException(
             status_code=409,
             detail="operation_not_supported_for_provider",
@@ -850,6 +851,41 @@ def delete_printer_permission(
 # ---------------------------------------------------------------------------
 # Send-to-print + control
 # ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{printer_id}/snapmaker-u1/preflight",
+    summary="Read U1 toolhead filaments and authorized G-code tool requirements",
+)
+async def snapmaker_u1_preflight(
+    printer_id: int,
+    file_id: int,
+    request: Request,
+    current_user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> dict:
+    printer_rbac.require_printer_role(
+        session, current_user, printer_id, PrinterRole.PRINT
+    )
+    p = get_or_404(session, Printer, printer_id, "printer_not_found")
+    f = get_or_404(session, File, file_id, "file_not_found")
+    if f.file_type != FileType.GCODE:
+        raise HTTPException(status_code=400, detail="file_not_gcode")
+    _require_file_role(session, current_user, f, CollectionRole.EDIT)
+    provider = _provider_client(request, p)
+    if not isinstance(provider, ConfiguredStartProvider):
+        raise HTTPException(status_code=409, detail="operation_not_supported_for_provider")
+    try:
+        return await provider.preflight(f, get_backend())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ProviderError as exc:
+        status_code = (
+            409 if exc.code == "operation_not_supported_for_provider" else 502
+        )
+        raise HTTPException(status_code=status_code, detail=exc.code) from exc
+
+
 
 
 @router.post(

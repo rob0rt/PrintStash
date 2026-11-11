@@ -23,6 +23,7 @@ export type PrinterStatus = "unknown" | "offline" | "ready" | "printing" | "paus
 
 export type PrinterProvider =
   | "moonraker"
+  | "snapmaker_u1"
   | "bambu_lan"
   | "prusalink"
   | "elegoo_centauri"
@@ -325,9 +326,37 @@ export interface PrintJobReproducibilityRead {
   toolpath_preview_url?: string | null;
 }
 
+export interface SnapmakerU1Slot {
+  index: number;
+  present: boolean;
+  material: string | null;
+  subtype: string | null;
+  vendor: string | null;
+  color: string | null;
+}
+
+export interface SnapmakerU1Filament {
+  index: number;
+  material: string | null;
+  color: string | null;
+  grams: number | null;
+}
+
+export interface SnapmakerU1Preflight {
+  slots: SnapmakerU1Slot[];
+  filaments: SnapmakerU1Filament[];
+}
+
+export interface SnapmakerU1Start {
+  mapping: [number, number][];
+  options: { bed_level: boolean; flow_calibrate: boolean; time_lapse_camera: boolean };
+  allow_material_mismatch: boolean;
+}
+
 export interface SendToPrinter {
   file_id: number;
   start_print?: boolean;
+  snapmaker_u1?: SnapmakerU1Start;
   remote_filename?: string;
   spool_id?: number | null;
   spool_name?: string | null;

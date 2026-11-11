@@ -13,6 +13,11 @@ available builds. Anything marked beta here remains beta.
 - Moonraker/Klipper is the primary supported provider.
 - Moonraker support includes live status, upload/send, optional start, remote
   file inventory sync, remote file start, pause/resume/cancel, and job history.
+- Snapmaker U1 is a dedicated beta provider inheriting Moonraker controls.
+  Immediate print start requires a verified logical-to-physical toolhead map
+  and uses firmware-specific JSON-RPC; unattended fleet queues and generic
+  remote-file start do not yet support these U1 options. Hardware validation
+  is pending.
 - Bambu LAN support is beta. It supports local status, upload of plain-text
   Vault G-code, explicit send-to-print, and pause/resume/cancel controls.
 - Bambu LAN remote-file inventory, deletion, raw G-code controls, and measured

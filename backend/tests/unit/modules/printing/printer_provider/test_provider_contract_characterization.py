@@ -19,6 +19,7 @@ from app.modules.printing.printer_provider import (
     MoonrakerProvider,
     OctoPrintProvider,
     PrusaLinkProvider,
+    SnapmakerU1Provider,
     capabilities_for_provider,
 )
 from app.modules.printing.prusalink import PrusaLinkClient
@@ -284,6 +285,7 @@ class TestCaptureArtifact:
     def test_artifact_capture_is_an_optional_bambu_only_extension(self) -> None:
         providers = {
             PrinterProvider.MOONRAKER: MoonrakerProvider("http://printer.invalid"),
+            PrinterProvider.SNAPMAKER_U1: SnapmakerU1Provider("http://u1.invalid"),
             PrinterProvider.BAMBU_LAN: BambuLanProvider(
                 "192.0.2.10", "TEST-SERIAL", "test-code"
             ),
@@ -305,6 +307,7 @@ class TestCaptureArtifact:
             for provider, client in providers.items()
         } == {
             PrinterProvider.MOONRAKER: False,
+            PrinterProvider.SNAPMAKER_U1: False,
             PrinterProvider.BAMBU_LAN: True,
             PrinterProvider.PRUSALINK: False,
             PrinterProvider.OCTOPRINT: False,
@@ -340,6 +343,7 @@ class TestCapability:
         ("provider", "supported", "support_level", "requires_ready_before_send"),
         [
             (PrinterProvider.MOONRAKER, frozenset(Capability), "stable", False),
+            (PrinterProvider.SNAPMAKER_U1, frozenset(Capability), "beta", False),
             (
                 PrinterProvider.BAMBU_LAN,
                 frozenset(

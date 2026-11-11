@@ -45,6 +45,7 @@ from printstash_core.printers import (
     ProviderError,
     ProviderId,
     PrusaLinkConfig,
+    SnapmakerU1Config,
 )
 
 # Obviously fake stand-ins for real credentials.
@@ -54,6 +55,7 @@ PASSWORD = "not-a-real-password"
 
 VALID_CONFIGS: list[tuple[Any, ProviderId]] = [
     (MoonrakerConfig("http://printer.local"), ProviderId.MOONRAKER),
+    (SnapmakerU1Config("http://u1.local"), ProviderId.SNAPMAKER_U1),
     (BambuConfig("printer.local", "SERIAL", ACCESS_CODE), ProviderId.BAMBU_LAN),
     (
         PrusaLinkConfig(
@@ -90,6 +92,7 @@ class TestProviderId:
         # API, so renaming one is a migration, not a refactor.
         assert [provider.value for provider in ProviderId] == [
             "moonraker",
+            "snapmaker_u1",
             "bambu_lan",
             "prusalink",
             "elegoo_centauri",

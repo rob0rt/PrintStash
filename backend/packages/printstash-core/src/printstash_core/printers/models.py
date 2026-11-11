@@ -13,6 +13,7 @@ class ProviderId(StrEnum):
     """Stable identifiers for supported printer protocols."""
 
     MOONRAKER = "moonraker"
+    SNAPMAKER_U1 = "snapmaker_u1"
     BAMBU_LAN = "bambu_lan"
     PRUSALINK = "prusalink"
     ELEGOO_CENTAURI = "elegoo_centauri"
@@ -213,6 +214,13 @@ class MoonrakerConfig:
 
 
 @dataclass(frozen=True)
+class SnapmakerU1Config(MoonrakerConfig):
+    """Snapmaker U1 uses Moonraker's transport with a distinct start contract."""
+
+    provider_id: ClassVar[ProviderId] = ProviderId.SNAPMAKER_U1
+
+
+@dataclass(frozen=True)
 class BambuConfig:
     host: str
     serial: str
@@ -277,6 +285,7 @@ class ElegooCentauriConfig:
 
 PrinterConfig: TypeAlias = (
     MoonrakerConfig
+    | SnapmakerU1Config
     | BambuConfig
     | PrusaLinkConfig
     | OctoPrintConfig

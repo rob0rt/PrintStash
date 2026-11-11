@@ -29,7 +29,11 @@ from app.db.session import get_session_factory
 from app.modules.identity import printer_rbac, rbac
 from app.modules.printing import fleet
 from app.modules.printing.printer_files import upsert_printer_file
-from app.modules.printing.printer_provider import PrinterProviderClient, ProviderError
+from app.modules.printing.printer_provider import (
+    ConfiguredStartProvider,
+    PrinterProviderClient,
+    ProviderError,
+)
 from app.modules.storage.artifact_content import (
     ArtifactContentError,
     ArtifactContentMissingError,
@@ -158,6 +162,7 @@ async def transfer_artifact(
     *,
     start_print: bool,
     mark_outcome_unknown: bool = False,
+    start_options=None,
 ) -> None:
     """Single storage-to-provider transfer seam for immediate and queued sends."""
     try:
@@ -174,7 +179,12 @@ async def transfer_artifact(
                 try:
                     await provider.upload(local, remote_filename)
                     if start_print:
-                        await provider.start(remote_filename)
+                        if start_options is not None:
+                            if not isinstance(provider, ConfiguredStartProvider):
+                                raise PrinterJobError("operation_not_supported_for_provider")
+                            await provider.start_configured(remote_filename, start_options)
+                        else:
+                            await provider.start(remote_filename)
                 except Exception as exc:
                     # Upload and start are non-transactional remote operations. A
                     # transport error can arrive after the printer accepted either

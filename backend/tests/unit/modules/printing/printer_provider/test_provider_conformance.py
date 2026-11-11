@@ -33,6 +33,7 @@ from tests.factories import printer_config
 # row here — an entry missing from this map fails test_every_provider_is_covered.
 FULL_CREDENTIALS: dict[PrinterProvider, dict[str, str]] = {
     PrinterProvider.MOONRAKER: {"moonraker_url": "http://printer.local"},
+    PrinterProvider.SNAPMAKER_U1: {"moonraker_url": "http://u1.local:7125"},
     PrinterProvider.BAMBU_LAN: {
         "bambu_host": "192.168.1.50",
         "bambu_serial": "01P00A000000001",
