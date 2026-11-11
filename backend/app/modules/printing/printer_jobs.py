@@ -29,7 +29,7 @@ from app.db.session import get_session_factory
 from app.modules.identity import printer_rbac, rbac
 from app.modules.printing import fleet
 from app.modules.printing.printer_files import upsert_printer_file
-from app.modules.printing.printer_provider import PrinterProviderClient, ProviderError
+from app.modules.printing.printer_provider import PrinterProviderClient, ConfiguredStartProvider, ProviderError
 from app.modules.storage.artifact_content import (
     ArtifactContentError,
     ArtifactContentMissingError,
@@ -176,6 +176,8 @@ async def transfer_artifact(
                     await provider.upload(local, remote_filename)
                     if start_print:
                         if start_options is not None:
+                            if not isinstance(provider, ConfiguredStartProvider):
+                                raise PrinterJobError("operation_not_supported_for_provider")
                             await provider.start_configured(remote_filename, start_options)
                         else:
                             await provider.start(remote_filename)
