@@ -368,8 +368,8 @@ class SnapmakerU1Provider(MoonrakerProvider):
             raise ProviderError(
                 "snapmaker_u1_mapping_required", code="snapmaker_u1_mapping_required"
             )
-        snapshot = await self.preflight(file_row, backend)
         try:
+            snapshot = await self.preflight(file_row, backend)
             validate_mapping(
                 snapshot["filaments"],
                 snapshot["slots"],
