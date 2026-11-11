@@ -33,7 +33,7 @@ def loaded_slots(response: Mapping[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(config, dict):
         raise ValueError("snapmaker_u1_state_unavailable")
     present = config.get("filament_exist")
-    if not isinstance(present, list) or len(present) < 4 or not all(type(x) is bool for x in present[:4]):
+    if not isinstance(present, list) or len(present) < 4 or not all(isinstance(x, bool) for x in present[:4]):
         raise ValueError("snapmaker_u1_state_unavailable")
     return [
         {
@@ -113,7 +113,7 @@ def validate_mapping(
     if len(mapping) != len(filaments) or {a for a, _ in mapping} != {f["index"] for f in filaments}:
         raise ValueError("snapmaker_u1_mapping_incomplete")
     heads = [b for _, b in mapping]
-    if len(set(heads)) != len(heads) or any(type(b) is not int or not 0 <= b < 4 for b in heads):
+    if len(set(heads)) != len(heads) or any(not isinstance(b, int) or isinstance(b, bool) or not 0 <= b < 4 for b in heads):
         raise ValueError("snapmaker_u1_mapping_invalid")
     slot_by_id = {slot["index"]: slot for slot in slots}
     fil_by_id = {f["index"]: f for f in filaments}
