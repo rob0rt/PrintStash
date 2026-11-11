@@ -16,7 +16,6 @@ from printstash_core.printers import (
     Capability,
     ElegooCentauriConfig,
     MoonrakerConfig,
-    SnapmakerU1Config,
     OctoPrintConfig,
     PrinterClient,
     PrinterConfig,
@@ -25,6 +24,7 @@ from printstash_core.printers import (
     ProviderId,
     ProviderRegistry,
     PrusaLinkConfig,
+    SnapmakerU1Config,
 )
 from printstash_core.printers.catalog import PROVIDER_DEFINITIONS
 
