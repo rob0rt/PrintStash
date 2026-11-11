@@ -17,9 +17,9 @@ from app.modules.printing.printer_provider import (
     Capability,
     ElegooCentauriProvider,
     MoonrakerProvider,
-    SnapmakerU1Provider,
     OctoPrintProvider,
     PrusaLinkProvider,
+    SnapmakerU1Provider,
     capabilities_for_provider,
 )
 from app.modules.printing.prusalink import PrusaLinkClient
