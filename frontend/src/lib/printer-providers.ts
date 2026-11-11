@@ -118,7 +118,7 @@ export function providerLabel(printer: Pick<PrinterRead, "provider" | "provider_
   if (printer.provider === "bambu_lan") return "Bambu LAN";
   if (printer.provider_variant === "elegoo_centauri_carbon_2") return "Elegoo Centauri Carbon 2";
   if (printer.provider_variant === "elegoo_centauri_carbon") return "Elegoo Centauri Carbon";
-  if (printer.provider_variant === "snapmaker_u1") return "Snapmaker U1 / Moonraker (beta)";
+  if (printer.provider === "snapmaker_u1") return "Snapmaker U1 (beta)";
   if (printer.provider_variant === "elegoo_neptune4") return "Elegoo Neptune 4 / Moonraker";
   return "Moonraker";
 }
