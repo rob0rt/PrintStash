@@ -23,7 +23,6 @@ from app.db.models import (
     FileType,
     Model,
     Printer,
-    PrinterProvider,
     PrinterRole,
     PrintJob,
     PrintJobState,
@@ -31,7 +30,6 @@ from app.db.models import (
 )
 from app.modules.identity import printer_rbac, rbac
 from app.modules.printing import materials
-from app.modules.printing.snapmaker_u1 import file_filaments, loaded_slots, validate_mapping
 from app.modules.printing.printer_files import (
     build_traceable_remote_filename,
     upsert_printer_file,
@@ -70,11 +68,10 @@ async def send_to_printer(
         raise OperationError(
             "operation_not_supported_for_provider", kind=ErrorKind.CONFLICT
         )
-    is_u1 = p.provider == PrinterProvider.MOONRAKER and p.provider_variant == "snapmaker_u1"
-    if payload.start_print and is_u1 and payload.snapmaker_u1 is None:
-        raise OperationError("snapmaker_u1_mapping_required", kind=ErrorKind.INVALID)
-    if payload.snapmaker_u1 is not None and (not is_u1 or not payload.start_print):
+    if payload.snapmaker_u1 is not None and not payload.start_print:
         raise OperationError("snapmaker_u1_options_not_applicable", kind=ErrorKind.INVALID)
+    if payload.start_print and getattr(provider, "requires_start_options", False) and payload.snapmaker_u1 is None:
+        raise OperationError("snapmaker_u1_mapping_required", kind=ErrorKind.INVALID)
     # Resolve and authorize the artifact before any provider I/O. Besides avoiding
     # unnecessary traffic, this guarantees unsupported/corrupt requests cannot
     # disclose a printer's live state or wake a device on the local network.
@@ -115,19 +112,14 @@ async def send_to_printer(
     backend = backend_provider()
     if payload.snapmaker_u1 is not None:
         try:
-            filaments = file_filaments(f, backend)
-            snapshot = await provider.query_u1_filaments()
-            slots = loaded_slots(snapshot)
-            validate_mapping(
-                filaments,
-                slots,
-                payload.snapmaker_u1.mapping,
-                allow_material_mismatch=payload.snapmaker_u1.allow_material_mismatch,
-            )
-        except ValueError as exc:
-            raise OperationError(str(exc), kind=ErrorKind.CONFLICT) from exc
+            await provider.prepare_start(f, backend, payload.snapmaker_u1)
         except ProviderError as exc:
-            raise OperationError(exc.code, kind=ErrorKind.UPSTREAM) from exc
+            raise OperationError(
+                exc.code,
+                kind=ErrorKind.CONFLICT
+                if exc.code.startswith("snapmaker_u1_") or exc.code == "operation_not_supported_for_provider"
+                else ErrorKind.UPSTREAM,
+            ) from exc
     blob_exists = await asyncio.to_thread(backend.exists, f.path)
     if not blob_exists:
         raise OperationError("file_blob_missing", kind=ErrorKind.GONE)
@@ -170,7 +162,7 @@ async def send_to_printer(
     try:
         await transfer_artifact(
             backend, provider, f, remote_name, start_print=payload.start_print,
-            snapmaker_u1=payload.snapmaker_u1,
+            start_options=payload.snapmaker_u1,
         )
     except ProviderError as exc:
         job.state = PrintJobState.FAILED
