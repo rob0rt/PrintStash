@@ -21,7 +21,6 @@ from .models import (
     ElegooCentauriConfig,
     MaterialSlotSnapshot,
     MoonrakerConfig,
-    SnapmakerU1Config,
     OctoPrintConfig,
     PrintArtifactFormat,
     PrinterConfig,
@@ -31,6 +30,7 @@ from .models import (
     ProviderError,
     ProviderId,
     PrusaLinkConfig,
+    SnapmakerU1Config,
     TemperatureSnapshot,
     ToolSnapshot,
 )
