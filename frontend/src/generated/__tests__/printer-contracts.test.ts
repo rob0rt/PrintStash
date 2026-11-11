@@ -22,6 +22,7 @@ import {
 
 const PROVIDER_IDS = [
   "moonraker",
+  "snapmaker_u1",
   "bambu_lan",
   "prusalink",
   "elegoo_centauri",
@@ -59,6 +60,7 @@ describe("PRINTER_CONTRACTS", () => {
     };
 
     expect(supports("moonraker", "send_gcode")).toBe(true);
+    expect(supports("snapmaker_u1", "send_gcode")).toBe(true);
     expect(supports("bambu_lan", "upload")).toBe(true);
     expect(supports("bambu_lan", "list_files")).toBe(false);
     expect(supports("prusalink", "delete_file")).toBe(true);
