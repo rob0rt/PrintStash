@@ -40,8 +40,8 @@ from app.modules.printing.printer_jobs import (
     transfer_artifact,
 )
 from app.modules.printing.printer_provider import (
-    PrinterProviderClient,
     ConfiguredStartProvider,
+    PrinterProviderClient,
     ProviderError,
 )
 from app.modules.storage.storage_backend.contracts import StorageBackend
