@@ -568,6 +568,10 @@ _BAMBU_SERIAL_MODEL_PREFIXES: dict[str, str] = {
     "039": "Bambu Lab A1",
 }
 
+_PROVIDER_MODEL_NAMES: dict[PrinterProvider, str] = {
+    PrinterProvider.SNAPMAKER_U1: "Snapmaker U1",
+}
+
 _PROVIDER_VARIANT_MODEL_NAMES: dict[str, str] = {
     "elegoo_neptune4": "Elegoo Neptune 4 family",
     "elegoo_centauri_carbon": "Elegoo Centauri Carbon",
@@ -576,6 +580,8 @@ _PROVIDER_VARIANT_MODEL_NAMES: dict[str, str] = {
 
 
 def detect_printer_model(printer: Printer) -> Optional[str]:
+    if printer.provider in _PROVIDER_MODEL_NAMES:
+        return _PROVIDER_MODEL_NAMES[printer.provider]
     if printer.provider_variant in _PROVIDER_VARIANT_MODEL_NAMES:
         return _PROVIDER_VARIANT_MODEL_NAMES[printer.provider_variant]
     if printer.provider == PrinterProvider.BAMBU_LAN and printer.bambu_serial:
