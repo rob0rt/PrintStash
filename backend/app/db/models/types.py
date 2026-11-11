@@ -61,6 +61,7 @@ class PrinterStatus(str, Enum):
 
 class PrinterProvider(str, Enum):
     MOONRAKER = "moonraker"
+    SNAPMAKER_U1 = "snapmaker_u1"
     BAMBU_LAN = "bambu_lan"
     PRUSALINK = "prusalink"
     ELEGOO_CENTAURI = "elegoo_centauri"
