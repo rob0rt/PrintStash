@@ -37,12 +37,14 @@ export function SnapmakerU1PrintDialog({
   filename,
   onClose,
   onStart,
+  loadPreflight = getSnapmakerU1Preflight,
 }: {
   printerId: number;
   fileId: number;
   filename: string;
   onClose: () => void;
   onStart: (settings: SnapmakerU1Start) => Promise<void>;
+  loadPreflight?: typeof getSnapmakerU1Preflight;
 }) {
   const [data, setData] = useState<SnapmakerU1Preflight | null>(null);
   const [mapping, setMapping] = useState<[number, number][]>([]);
@@ -58,7 +60,7 @@ export function SnapmakerU1PrintDialog({
     setLoading(true);
     setError(null);
     try {
-      const response = await getSnapmakerU1Preflight(printerId, fileId);
+      const response = await loadPreflight(printerId, fileId);
       setData(response);
       setMapping(autoMapping(response));
       setAllowMismatch(false);
@@ -71,7 +73,7 @@ export function SnapmakerU1PrintDialog({
 
   useEffect(() => {
     let current = true;
-    void getSnapmakerU1Preflight(printerId, fileId)
+    void loadPreflight(printerId, fileId)
       .then((response) => {
         if (!current) return;
         setData(response);
@@ -86,7 +88,7 @@ export function SnapmakerU1PrintDialog({
     return () => {
       current = false;
     };
-  }, [fileId, printerId]);
+  }, [fileId, printerId, loadPreflight]);
 
   const warnings = useMemo(() => {
     if (!data) return [];
