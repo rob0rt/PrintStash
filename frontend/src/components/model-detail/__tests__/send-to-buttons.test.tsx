@@ -41,11 +41,13 @@ const checkFleetCompatibility = vi.fn<SendToCommands["checkFleetCompatibility"]>
 const createFleetBatch = vi.fn<SendToCommands["createFleetBatch"]>();
 const enqueueFleetJob = vi.fn<SendToCommands["enqueueFleetJob"]>();
 const sendToPrinter = vi.fn<SendToCommands["sendToPrinter"]>();
+const getSnapmakerU1Preflight = vi.fn<SendToCommands["getSnapmakerU1Preflight"]>();
 const commands: SendToCommands = {
   checkFleetCompatibility,
   createFleetBatch,
   enqueueFleetJob,
   sendToPrinter,
+  getSnapmakerU1Preflight,
 };
 
 const printer = aPrinter({
@@ -231,6 +233,16 @@ function renderPanel({
 beforeEach(() => {
   // `useRequireAuth` gates the send buttons on a stored session.
   storeLogin("", adminUser, { silent: true });
+  getSnapmakerU1Preflight.mockReset();
+  getSnapmakerU1Preflight.mockResolvedValue({
+    filaments: [{ index: 0, material: "PETG", color: "#FF0000", grams: 4 }],
+    slots: [
+      { index: 0, present: true, material: "PLA", subtype: null, vendor: "Test", color: "#00FF00" },
+      { index: 1, present: true, material: "PETG", subtype: "Matte", vendor: "SUNLU", color: "#FF0000" },
+      { index: 2, present: false, material: null, subtype: null, vendor: null, color: null },
+      { index: 3, present: false, material: null, subtype: null, vendor: null, color: null },
+    ],
+  });
   enqueueFleetJob.mockReset();
   enqueueFleetJob.mockResolvedValue(queuedJob);
   createFleetBatch.mockReset();
