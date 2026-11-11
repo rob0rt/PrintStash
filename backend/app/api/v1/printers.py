@@ -55,6 +55,7 @@ from app.modules.printing.printer_provider import (
     capabilities_for_provider,
     detect_printer_model,
     get_provider_client,
+    ConfiguredStartProvider,
     provider_diagnostic_summary,
 )
 from app.modules.printing.unattributed import ensure_unattributed_artifact
@@ -872,6 +873,8 @@ async def snapmaker_u1_preflight(
         raise HTTPException(status_code=400, detail="file_not_gcode")
     _require_file_role(session, current_user, f, CollectionRole.EDIT)
     provider = _provider_client(request, p)
+    if not isinstance(provider, ConfiguredStartProvider):
+        raise HTTPException(status_code=409, detail="operation_not_supported_for_provider")
     try:
         return await provider.preflight(f, get_backend())
     except ValueError as exc:
