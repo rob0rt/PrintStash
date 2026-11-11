@@ -41,6 +41,7 @@ from app.modules.printing.printer_jobs import (
 )
 from app.modules.printing.printer_provider import (
     PrinterProviderClient,
+    ConfiguredStartProvider,
     ProviderError,
 )
 from app.modules.storage.storage_backend.contracts import StorageBackend
@@ -70,7 +71,7 @@ async def send_to_printer(
         )
     if payload.snapmaker_u1 is not None and not payload.start_print:
         raise OperationError("snapmaker_u1_options_not_applicable", kind=ErrorKind.INVALID)
-    if payload.start_print and getattr(provider, "requires_start_options", False) and payload.snapmaker_u1 is None:
+    if payload.start_print and isinstance(provider, ConfiguredStartProvider) and provider.requires_start_options and payload.snapmaker_u1 is None:
         raise OperationError("snapmaker_u1_mapping_required", kind=ErrorKind.INVALID)
     # Resolve and authorize the artifact before any provider I/O. Besides avoiding
     # unnecessary traffic, this guarantees unsupported/corrupt requests cannot
@@ -111,6 +112,8 @@ async def send_to_printer(
             )
     backend = backend_provider()
     if payload.snapmaker_u1 is not None:
+        if not isinstance(provider, ConfiguredStartProvider):
+            raise OperationError("operation_not_supported_for_provider", kind=ErrorKind.CONFLICT)
         try:
             await provider.prepare_start(f, backend, payload.snapmaker_u1)
         except ProviderError as exc:
