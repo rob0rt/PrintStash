@@ -62,6 +62,13 @@ class PrinterProviderClient(Protocol):
     """Legacy Moonraker-shaped surface retained for application consumers."""
 
     capabilities: ProviderCapabilities
+    requires_start_options: bool
+
+    async def preflight(self, file_row: Any, backend: Any) -> dict[str, Any]: ...
+
+    async def prepare_start(self, file_row: Any, backend: Any, options: Any) -> None: ...
+
+    async def start_configured(self, remote_filename: str, options: Any) -> dict[str, Any]: ...
 
     async def info(self) -> dict[str, Any]: ...
 
@@ -113,6 +120,23 @@ class BaseProvider:
 
     provider: PrinterProvider
     capabilities: ProviderCapabilities
+    requires_start_options: bool = False
+
+    async def preflight(self, file_row: Any, backend: Any) -> dict[str, Any]:
+        raise ProviderError(
+            "operation_not_supported_for_provider", code="operation_not_supported_for_provider"
+        )
+
+    async def prepare_start(self, file_row: Any, backend: Any, options: Any) -> None:
+        if options is not None:
+            raise ProviderError(
+                "operation_not_supported_for_provider", code="operation_not_supported_for_provider"
+            )
+
+    async def start_configured(self, remote_filename: str, options: Any) -> dict[str, Any]:
+        raise ProviderError(
+            "operation_not_supported_for_provider", code="operation_not_supported_for_provider"
+        )
 
     @classmethod
     def build(cls, printer: Printer) -> BaseProvider:  # pragma: no cover - abstract
