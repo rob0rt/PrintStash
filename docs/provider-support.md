@@ -51,6 +51,42 @@ Recommended smoke test:
 4. Send a small known-good G-code file without auto-start.
 5. Start, pause, resume, and cancel only on a printer where that is safe.
 
+## Snapmaker U1
+
+Support level: **beta** (hardware validation pending). Snapmaker U1 is a dedicated
+provider that inherits Moonraker's upload, monitoring, configuration, file
+inventory, pause/resume/cancel, and history behavior.
+
+The U1 uses its own print-start contract rather than Moonraker's generic start:
+
+- In the model send dialog, select the U1 and **Start print immediately**.
+- A pre-print dialog reads the physical head inventory from
+  `print_task_config`, discovers logical tools in the authorized G-code,
+  and lets the operator map them to distinct loaded physical heads.
+- A material-type mismatch must be explicitly acknowledged; color differences
+  are advisory. Empty heads, duplicate assignments, and incomplete mappings
+  are rejected before upload.
+- Auto bed leveling, dynamic flow calibration and timelapse are configurable.
+  Only the explicit **Send & start** action sends
+  `server.files.start_local_print` with `map_table` and the selected options.
+- The raw Moonraker `printer/print/start` endpoint is intentionally blocked
+  for U1. Existing-file starts and unattended queued starts currently require
+  per-print mapping and cannot use the unconfigured generic start.
+
+Recommended smoke test (on real U1 hardware, before lifting beta status):
+
+1. Register `Snapmaker U1 (beta)` using its Moonraker URL.
+2. Confirm all four head labels, loaded colors and materials in preflight.
+3. Upload a single-material G-code without starting; confirm no motion.
+4. Map that G-code's logical T0 to a different loaded physical head, disable
+   all calibration options, and start while observing the printer.
+5. Test a two-material job with swapped physical heads. Verify the printer
+   rejected empty/duplicate heads and material mismatches before starting.
+6. Check pause, resume, cancel, file inventory and history. Verify the error
+   shown when U1 firmware rejects the custom JSON-RPC request.
+
+No hardware validation is claimed here.
+
 ## Bambu LAN
 
 Support level: beta.
