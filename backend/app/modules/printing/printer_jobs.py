@@ -29,7 +29,11 @@ from app.db.session import get_session_factory
 from app.modules.identity import printer_rbac, rbac
 from app.modules.printing import fleet
 from app.modules.printing.printer_files import upsert_printer_file
-from app.modules.printing.printer_provider import PrinterProviderClient, ConfiguredStartProvider, ProviderError
+from app.modules.printing.printer_provider import (
+    ConfiguredStartProvider,
+    PrinterProviderClient,
+    ProviderError,
+)
 from app.modules.storage.artifact_content import (
     ArtifactContentError,
     ArtifactContentMissingError,
